@@ -1,0 +1,208 @@
+/* ==================== RESET & BASE ==================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root{
+  --bg-panel: rgba(10, 14, 18, 0.82);
+  --border-line: rgba(0, 230, 200, 0.35);
+  --accent-cyan: #00e6c8;
+  --accent-amber: #ffb400;
+  --accent-red: #ff3b3b;
+  --text-main: #eaf6f4;
+  --text-dim: #7fa39b;
+  --font-display: 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Consolas', 'Courier New', monospace;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #05070a;
+  font-family: var(--font-display);
+  color: var(--text-main);
+}
+
+/* ==================== CANVAS ==================== */
+#main-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  outline: none;
+}
+
+#minimap-canvas {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 240px;
+  height: 240px;
+  border-radius: 12px;
+  border: 2px solid var(--border-line);
+  box-shadow: 0 0 24px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,230,200,0.08);
+  background: #0a1512;
+  z-index: 20;
+}
+
+/* ==================== LOADING ==================== */
+#loading-screen {
+  position: fixed; inset: 0;
+  background: radial-gradient(circle at 50% 40%, #0d1a17 0%, #05070a 80%);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999;
+  transition: opacity 0.6s ease;
+}
+.loading-box { text-align: center; width: 340px; }
+.loading-title {
+  font-size: 22px; letter-spacing: 2px; font-weight: 700;
+  color: var(--accent-cyan); text-shadow: 0 0 18px rgba(0,230,200,0.6);
+  margin-bottom: 8px;
+}
+.loading-sub { color: var(--text-dim); font-size: 13px; margin-bottom: 18px; }
+.loading-bar-track {
+  width: 100%; height: 6px; background: rgba(255,255,255,0.08);
+  border-radius: 4px; overflow: hidden;
+}
+#loading-bar-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-amber));
+  transition: width 0.15s ease-out;
+}
+#loading-percent { margin-top: 10px; font-family: var(--font-mono); color: var(--text-dim); }
+
+/* ==================== HUD LAYOUT ==================== */
+#hud-root {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  font-family: var(--font-display);
+}
+
+.hud-panel {
+  position: absolute;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-line);
+  border-radius: 10px;
+  padding: 10px 14px;
+  backdrop-filter: blur(6px);
+  pointer-events: auto;
+}
+
+.top-left { top: 16px; left: 16px; width: 260px; }
+.top-right { top: 16px; right: 16px; width: 220px; text-align: right; }
+
+.hud-title, .help-title { font-size: 11px; letter-spacing: 1.5px; color: var(--text-dim); margin-bottom: 4px; }
+#exam-name { font-size: 15px; font-weight: 600; margin-bottom: 8px; color: var(--accent-cyan); }
+.exam-instruction { font-size: 12px; color: var(--text-dim); margin-top: 8px; line-height: 1.5; min-height: 16px; }
+
+.btn-row { display: flex; flex-direction: column; gap: 6px; }
+.hud-btn {
+  background: rgba(0,230,200,0.08);
+  border: 1px solid var(--border-line);
+  color: var(--text-main);
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.hud-btn:hover { background: rgba(0,230,200,0.22); }
+.hud-btn.active { background: var(--accent-cyan); color: #05070a; font-weight: 700; }
+
+.score-label { font-size: 10px; letter-spacing: 1px; color: var(--text-dim); }
+.score-value { font-family: var(--font-mono); font-size: 30px; font-weight: 700; color: var(--accent-cyan); line-height: 1; }
+.score-value.warn { color: var(--accent-amber); }
+.score-value.fail { color: var(--accent-red); }
+.timer-block { margin-top: 8px; }
+.timer-value { font-family: var(--font-mono); font-size: 20px; color: var(--text-main); }
+.fault-log { margin-top: 8px; font-size: 11px; color: var(--accent-red); max-height: 90px; overflow-y: auto; line-height: 1.5; }
+
+/* Dashboard (đồng hồ tốc độ/tua) */
+.dashboard {
+  bottom: 20px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 28px;
+  padding: 14px 34px;
+  border-radius: 20px;
+}
+.gauge { position: relative; width: 92px; text-align: center; }
+.gauge-svg { width: 92px; height: 56px; overflow: visible; }
+.gauge-track { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 10; }
+.gauge-fill { fill: none; stroke-width: 10; stroke-linecap: round; }
+.rpm-fill { stroke: var(--accent-amber); stroke-dasharray: 251; stroke-dashoffset: 251; transition: stroke-dashoffset 0.1s linear, stroke 0.2s; }
+.gauge-label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; margin-top: -6px; }
+.gauge-value { font-family: var(--font-mono); font-size: 16px; color: var(--accent-amber); }
+
+.gear-display {
+  font-family: var(--font-mono); font-size: 34px; font-weight: 700;
+  color: var(--text-main); background: rgba(255,255,255,0.06);
+  border-radius: 8px; padding: 2px 0;
+}
+
+.speed-block { text-align: center; padding: 0 12px; }
+.speed-value { font-family: var(--font-mono); font-size: 52px; font-weight: 700; color: #ffffff; line-height: 1; text-shadow: 0 0 20px rgba(0,230,200,0.5); }
+.speed-unit { font-size: 12px; color: var(--text-dim); letter-spacing: 2px; }
+
+/* Pedal panel */
+.pedals-panel { bottom: 20px; left: 20px; width: 200px; }
+.pedal-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.pedal-label { width: 44px; font-size: 11px; color: var(--text-dim); }
+.pedal-bar { flex: 1; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+.pedal-fill { height: 100%; width: 0%; transition: width 0.08s linear; }
+.throttle-fill { background: var(--accent-cyan); }
+.brake-fill { background: var(--accent-red); }
+.clutch-fill { background: var(--accent-amber); }
+
+.engine-status-row { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.engine-status { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; letter-spacing: 1px; }
+.engine-status.off { background: rgba(255,59,59,0.15); color: var(--accent-red); }
+.engine-status.on { background: rgba(0,230,200,0.15); color: var(--accent-cyan); }
+.engine-status.stall { background: rgba(255,180,0,0.18); color: var(--accent-amber); animation: blink 0.6s infinite; }
+
+.signal-indicator { opacity: 0.15; font-size: 16px; color: var(--accent-amber); transition: opacity 0.1s; }
+.signal-indicator.on { opacity: 1; text-shadow: 0 0 10px var(--accent-amber); }
+
+@keyframes blink { 50% { opacity: 0.3; } }
+
+/* Controls help */
+.controls-help {
+  bottom: 20px; right: 280px;
+  font-size: 11px; color: var(--text-dim); line-height: 1.8;
+  width: 210px;
+}
+
+/* Center message (pass/fail) */
+.center-message {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: rgba(5, 7, 10, 0.92);
+  border: 2px solid var(--accent-cyan);
+  border-radius: 16px;
+  padding: 30px 46px;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  z-index: 50;
+  box-shadow: 0 0 60px rgba(0,230,200,0.4);
+}
+.center-message.fail { border-color: var(--accent-red); box-shadow: 0 0 60px rgba(255,59,59,0.4); color: var(--accent-red); }
+.center-message.pass { color: var(--accent-cyan); }
+.center-message .sub { display:block; font-size: 14px; font-weight: 400; margin-top: 10px; color: var(--text-dim); }
+.hidden { display: none !important; }
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 900px) {
+  .top-left, .top-right { width: 44vw; padding: 8px 10px; }
+  .controls-help { display: none; }
+  .dashboard { gap: 12px; padding: 10px 16px; }
+  .speed-value { font-size: 36px; }
+  .gauge, .gauge-svg { width: 64px; }
+  #minimap-canvas { width: 130px; height: 130px; right: 10px; bottom: 10px; }
+  .pedals-panel { width: 150px; bottom: 150px; }
+}
+
+@media (max-width: 520px) {
+  .top-left, .top-right { position: static; width: auto; margin: 6px; display: inline-block; }
+  .pedals-panel { left: 8px; bottom: 140px; width: 130px; }
+  .dashboard { bottom: 8px; padding: 8px 10px; gap: 8px; }
+}
