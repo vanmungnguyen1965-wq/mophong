@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Mô Phỏng Sát Hạch Lái Xe B2 - 3D</title>
+<link rel="stylesheet" href="style.css" />
+
+<!-- Import map: nạp Three.js và các addon (GLTFLoader, OrbitControls, EffectComposer...) từ CDN dạng ES module -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+  <!-- Màn hình loading -->
+  <div id="loading-screen">
+    <div class="loading-box">
+      <div class="loading-title">SÁT HẠCH LÁI XE HẠNG B</div>
+      <div class="loading-sub">Đang khởi tạo mô phỏng 3D...</div>
+      <div class="loading-bar-track"><div id="loading-bar-fill"></div></div>
+      <div id="loading-percent">0%</div>
+    </div>
+  </div>
+
+  <!-- Canvas chính render bằng WebGL / Three.js -->
+  <canvas id="main-canvas"></canvas>
+
+  <!-- Canvas minimap - render WebGL riêng, camera trực giao nhìn từ trên xuống -->
+  <canvas id="minimap-canvas"></canvas>
+
+  <!-- ================= HUD ================= -->
+  <div id="hud-root">
+
+    <!-- Góc trên trái: chọn bài thi + trạng thái -->
+    <div class="hud-panel top-left">
+      <div class="hud-title">BÀI THI</div>
+      <div id="exam-name">Chưa chọn bài thi</div>
+      <div class="btn-row">
+        <button id="btn-exam-1" class="hud-btn">Bài 1: Ghép dọc</button>
+        <button id="btn-exam-2" class="hud-btn">Bài 2: Ghép ngang</button>
+      </div>
+      <div id="exam-instruction" class="exam-instruction"></div>
+    </div>
+
+    <!-- Góc trên phải: điểm số + thời gian -->
+    <div class="hud-panel top-right">
+      <div class="score-block">
+        <div class="score-label">ĐIỂM</div>
+        <div id="score-value" class="score-value">100</div>
+      </div>
+      <div class="timer-block">
+        <div class="score-label">THỜI GIAN</div>
+        <div id="timer-value" class="timer-value">00:00</div>
+      </div>
+      <div id="fault-log" class="fault-log"></div>
+    </div>
+
+    <!-- Đồng hồ táp lô: tốc độ + vòng tua + vô lăng -->
+    <div class="hud-panel dashboard">
+      <div class="wheel-gauge">
+        <svg id="wheel-svg" viewBox="0 0 100 100" class="wheel-svg">
+          <circle cx="50" cy="50" r="38" class="wheel-rim" />
+          <circle cx="50" cy="50" r="8" class="wheel-hub" />
+          <line x1="50" y1="16" x2="50" y2="50" class="wheel-spoke" />
+          <line x1="20" y1="66" x2="50" y2="50" class="wheel-spoke" />
+          <line x1="80" y1="66" x2="50" y2="50" class="wheel-spoke" />
+          <circle cx="50" cy="19" r="3" class="wheel-marker" />
+        </svg>
+        <div class="gauge-label">VÔ LĂNG</div>
+      </div>
+      <div class="gauge">
+        <svg viewBox="0 0 200 120" class="gauge-svg">
+          <path d="M 20 100 A 80 80 0 0 1 180 100" class="gauge-track"/>
+          <path id="rpm-arc" d="M 20 100 A 80 80 0 0 1 180 100" class="gauge-fill rpm-fill"/>
+        </svg>
+        <div class="gauge-label">RPM</div>
+        <div id="rpm-value" class="gauge-value">800</div>
+      </div>
+      <div class="speed-block">
+        <div id="speed-value" class="speed-value">0</div>
+        <div class="speed-unit">km/h</div>
+      </div>
+      <div class="gauge">
+        <div id="gear-display" class="gear-display">N</div>
+        <div class="gauge-label">SỐ</div>
+      </div>
+    </div>
+
+    <!-- Thanh trạng thái pedal / ly hợp / động cơ -->
+    <div class="hud-panel pedals-panel">
+      <div class="pedal-row">
+        <span class="pedal-label">GA</span>
+        <div class="pedal-bar"><div id="throttle-bar" class="pedal-fill throttle-fill"></div></div>
+      </div>
+      <div class="pedal-row">
+        <span class="pedal-label">PHANH</span>
+        <div class="pedal-bar"><div id="brake-bar" class="pedal-fill brake-fill"></div></div>
+      </div>
+      <div class="engine-status-row">
+        <span id="engine-status" class="engine-status off">MÁY TẮT</span>
+        <span id="handbrake-indicator" class="handbrake-indicator">PHANH TAY</span>
+        <span id="signal-left" class="signal-indicator">◀</span>
+        <span id="signal-right" class="signal-indicator">▶</span>
+      </div>
+    </div>
+
+    <!-- Hướng dẫn phím tắt -->
+    <div class="hud-panel controls-help">
+      <div class="help-title">ĐIỀU KHIỂN</div>
+      <div>◀ / ▶: Đánh vô lăng (qua trái / qua phải)</div>
+      <div>X: Ga &nbsp; C: Phanh &nbsp; E: Đề máy</div>
+      <div>1 2 3 4 R N: Vào số &nbsp; Space: Phanh tay</div>
+      <div>A / D: Xi nhan trái / phải</div>
+    </div>
+
+    <!-- Thông báo trung tâm (kết quả, lỗi lớn...) -->
+    <div id="center-message" class="center-message hidden"></div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
